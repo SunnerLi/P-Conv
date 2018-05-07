@@ -128,7 +128,7 @@ class PartialConv2d(nn.Module):
         mask_image = (image * mask) 
         out = self.img_conv(mask_image)
         out = (out - bias) / sum_mask + bias
-        mask = torch.clamp(sum_mask, 0, 1).int()
+        mask = torch.clamp(sum_mask, 0, 1).long()
         return out, mask
 
 if __name__ == '__main__':
