@@ -59,14 +59,14 @@ def summary(model, input_size):
             h.remove()
 
         print('----------------------------------------------------------------')
-        line_new = '{:>20}  {:>25} {:>15}'.format('Layer (type)', 'Output Shape', 'Param #')
+        line_new = '{:>20}  {:>50} {:>15}'.format('Layer (type)', 'Output Shape', 'Param #')
         print(line_new)
         print('================================================================')
         total_params = 0
         trainable_params = 0
         for layer in summary:
             # input_shape, output_shape, trainable, nb_params
-            line_new = '{:>20}  {:>25} {:>15}'.format(layer, str(summary[layer]['output_shape']), summary[layer]['nb_params'])
+            line_new = '{:>20}  {:>50} {:>15}'.format(layer, str(summary[layer]['output_shape']), summary[layer]['nb_params'])
             total_params += summary[layer]['nb_params']
             if 'trainable' in summary[layer]:
                 if summary[layer]['trainable'] == True:

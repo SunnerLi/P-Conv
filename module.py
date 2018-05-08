@@ -43,9 +43,19 @@ class PartialUp(nn.Module):
         if self.use_batch_norm:
             self.norm = nn.BatchNorm2d(output_channel)
 
+    def checkAndPadding(self, var1, var2):
+        if var1.size(2) > var2.size(2) or var1.size(3) > var2.size(3):
+            var1 = var1[:, :, :var2.size(2), :var2.size(3)]
+        else:
+            pad = [0, 0, int(var2.size(2) - var1.size(2)), int(var2.size(3) - var1.size(3))]
+            var1 = F.pad(var1, pad)
+        return var1, var2
+
     def forward(self, x, cat_x, m, cat_m):
         x = self.up(x)
         m = self.up(m.float()).long()
+        x, cat_x = self.checkAndPadding(x, cat_x)
+        m, cat_m = self.checkAndPadding(m, cat_m)
         x = torch.cat([x, cat_x], 1)
         m = torch.cat([m, cat_m], 1)
         x_, m_ = self.pconv(x, m)

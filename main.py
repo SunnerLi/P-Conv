@@ -5,8 +5,8 @@ import numpy as np
 import torch
 
 if __name__ == '__main__':
-    image = Variable(torch.from_numpy(np.random.random([1, 3, 512, 512])).float()).cuda()
-    mask = Variable(torch.from_numpy(np.random.randint(0, 2, [1, 3, 512, 512]))).cuda()
+    image = Variable(torch.from_numpy(np.random.random([1, 3, 480, 512])).float()).cuda()
+    mask = Variable(torch.from_numpy(np.random.randint(0, 2, [1, 3, 480, 512]))).cuda()
     model = PartialUNet().cuda()
-    summary(model, input_size = [(3, 512, 512), (3, 512, 512)])
+    summary(model, input_size = [(3, 480, 512), (3, 480, 512)])
     model(image, mask)
