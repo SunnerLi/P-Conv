@@ -41,7 +41,7 @@ class PartialConv2d(nn.Module):
             kernel_size = kernel_size, 
             stride = stride, 
             padding = padding, 
-            fill = 1, 
+            fill = True, 
             bias = False
         )
         self.img_conv = self.__Conv2d(
@@ -50,11 +50,11 @@ class PartialConv2d(nn.Module):
             kernel_size = kernel_size, 
             stride = stride, 
             padding = padding,
-            fill = None,
+            fill = False,
             bias = True
         )
 
-    def __Conv2d(self, input_channel, output_channel, kernel_size, stride, padding, fill = None, bias = True):
+    def __Conv2d(self, input_channel, output_channel, kernel_size, stride, padding, fill = False, bias = True):
         """
             Implement 2D convolution with zero padding.
             This function is the core part of partial convolution, 
@@ -77,7 +77,7 @@ class PartialConv2d(nn.Module):
         if padding != 0:
             op += [nn.ZeroPad2d(padding)]
         conv_op = nn.Conv2d(input_channel, output_channel, kernel_size, stride = stride, padding = 0, bias = bias)
-        if fill is not None:
+        if fill:
             conv_op.weight.data.fill_(1)
         op += [conv_op]
         return nn.Sequential(*op)
@@ -125,9 +125,15 @@ class PartialConv2d(nn.Module):
         # Forward next
         mask = mask.float()
         sum_mask = self.mask_conv(mask)
-        mask_image = (image * mask) 
+        mask_image = image.clone() * mask 
         out = self.img_conv(mask_image)
-        out = (out - bias) / sum_mask + bias
+
+        # Devide
+        out = (out - bias) / (sum_mask + 1e-20)
+        out = out * (1 - (out.clone() > 1e+10).float()) + bias
+
+        # Rest
+        # out = (out - bias) / sum_mask + bias
         mask = torch.clamp(sum_mask, 0, 1).long()
         return out, mask
 

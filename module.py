@@ -29,9 +29,10 @@ class PartialDown(nn.Module):
 
 class PartialUp(nn.Module):
     def __init__(self, input_channel = 3, concat_channel = 64, output_channel = 32, 
-        kernel_size = 3, stride = 2, padding = 1, bias = True, use_batch_norm = True):
+        kernel_size = 3, stride = 2, padding = 1, bias = True, use_batch_norm = True, use_lr = True):
         super(PartialUp, self).__init__()
         self.use_batch_norm = use_batch_norm
+        self.use_lr = use_lr
         self.pconv = PartialConv2d(
             input_channel = input_channel + concat_channel,
             output_channel = output_channel,
@@ -61,7 +62,8 @@ class PartialUp(nn.Module):
         x_, m_ = self.pconv(x, m)
         if self.use_batch_norm:
             x_ = self.norm(x_)
-        x_ = F.leaky_relu(x_, 0.2)
+        if self.use_lr:
+            x_ = F.leaky_relu(x_, 0.2)
         return x_, m_
 
 if __name__ == '__main__':
