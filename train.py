@@ -17,6 +17,7 @@ def parse():
     parser.add_argument('--epoch', default = 1, type = int, help = 'epoch')
     parser.add_argument('--batch_size', default = 1, type = int, help = 'batch size')
     parser.add_argument('--model_path', default = './model.pth', type = str, help = 'The path of training model result')
+    parser.add_argument('--style', default = "p1,p2,p3", type = str, help = 'The symbol of style loss')
     args = parser.parse_args()
     return args
 
@@ -40,11 +41,11 @@ if __name__ == '__main__':
     )
 
     # Load model
-    model = PartialUNet()
+    model = PartialUNet(args.style)
     model = model.cuda() if torch.cuda.is_available() else model
     if os.path.exists(args.model_path):
         model.load_state_dict(torch.load(args.model_path))
-    optimizer = Adam(model.parameters(), lr = 0.0001)
+    optimizer = Adam(model.getTrainableParameters(), lr = 0.001)
 
     # Train
     for epoch in range(args.epoch):
@@ -69,6 +70,5 @@ if __name__ == '__main__':
             sunnertransforms.Transpose(sunnertransforms.BCHW2BHWC),
     ]))
     show_img = show_img.astype(np.uint8)
-    cv2.imshow('show', show_img[0])
-    cv2.waitKey()
+    cv2.imwrite("show.png", show_img[0])
     torch.save(model.state_dict(), args.model_path)
