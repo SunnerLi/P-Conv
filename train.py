@@ -1,3 +1,4 @@
+import _init_path
 from torch.autograd import Variable
 from model import PartialUNet
 from torch.optim import Adam
@@ -16,6 +17,7 @@ def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epoch', default = 1, type = int, help = 'epoch')
     parser.add_argument('--batch_size', default = 1, type = int, help = 'batch size')
+    parser.add_argument('--image_folder', default = './train_data/train2014', type = str, help = 'The folder of the training image')
     parser.add_argument('--model_path', default = './model.pth', type = str, help = 'The path of training model result')
     parser.add_argument('--style', default = "p1,p2,p3", type = str, help = 'The symbol of style loss')
     args = parser.parse_args()
@@ -26,7 +28,7 @@ if __name__ == '__main__':
 
     # Create data loader
     loader = sunnerData.ImageLoader(
-        sunnerData.ImageDataset(root_list = ['./train_data/train2014', './train_data/mask'], transform = transforms.Compose([
+        sunnerData.ImageDataset(root_list = [args.image_folder, './train_data/mask'], transform = transforms.Compose([
             # sunnertransforms.Rescale((360, 640)),
             sunnertransforms.Rescale((512, 512)),
             sunnertransforms.ToTensor(),
@@ -45,7 +47,7 @@ if __name__ == '__main__':
     model = model.cuda() if torch.cuda.is_available() else model
     if os.path.exists(args.model_path):
         model.load_state_dict(torch.load(args.model_path))
-    optimizer = Adam(model.getTrainableParameters(), lr = 0.001)
+    optimizer = Adam(model.getTrainableParameters(), lr = 0.0002)
 
     # Train
     for epoch in range(args.epoch):
