@@ -15,12 +15,19 @@ import os
 
 def parse():
     parser = argparse.ArgumentParser()
+
+    # Fundemental
     parser.add_argument('--epoch', default = 1, type = int, help = 'epoch')
     parser.add_argument('--batch_size', default = 1, type = int, help = 'batch size')
     parser.add_argument('--image_folder', default = './data/train2014', type = str, help = 'The folder of the training image')
     parser.add_argument('--model_path', default = './model.pth', type = str, help = 'The path of training model result')
     parser.add_argument('--model_type', default = 'pconv', type = str, help = 'The type of model (pconv or unet)')   
     parser.add_argument('--style', default = "p1,p2,p3", type = str, help = 'The symbol of style loss')
+
+    # Hyper-parameters
+    parser.add_argument('--lr', default = 0.0002, type = float, help = 'The learning rate')   
+    parser.add_argument('--lambda_style', default = 1, type = float, help = 'The weight of style loss')   
+
     args = parser.parse_args()
     return args
 
@@ -45,15 +52,15 @@ if __name__ == '__main__':
 
     # Load model
     if args.model_type == 'pconv':
-        model = PartialUNet(args.style)
+        model = PartialUNet(style_list = args.style, base = 64, style_weight = args.lambda_style)
     elif args.model_type == 'unet':
-        model = UNet(args.style)
+        model = UNet(style_list = args.style ,base = 64, style_weight = args.lambda_style)
     else:
         raise Exception('Model type is not support... (Just accept pconv or unet)')    
     model = model.cuda() if torch.cuda.is_available() else model
     if os.path.exists(args.model_path):
         model.load_state_dict(torch.load(args.model_path))
-    optimizer = Adam(model.getTrainableParameters(), lr = 0.0002)
+    optimizer = Adam(model.getTrainableParameters(), lr = args.lr)
 
     # Train
     for epoch in range(args.epoch):

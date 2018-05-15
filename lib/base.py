@@ -6,14 +6,14 @@ import torch.nn as nn
 import torch
 
 class Model(nn.Module):
-    def __init__(self, style_list = "p1,p2,p3", base = 64):
+    def __init__(self, style_list = "p1,p2,p3", base = 64, style_weight = 1):
         super(Model, self).__init__()
         self.style_list = style_list.split(',')
 
         # Set loss balance constants
         self.lambda_hole = 6
         self.lambda_perceptual = 0.05
-        self.lambda_style = 1
+        self.lambda_style = style_weight
         self.lambda_tv = 0.1
 
         # Load pre-trained VGG16 and fix parameter training

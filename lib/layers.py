@@ -123,14 +123,14 @@ class PartialConv2d(nn.Module):
         bias = self.img_conv(Variable(torch.zeros_like(image.data)))
 
         # Forward next
-        mask = mask.float()
+        mask = mask.float()               
         sum_mask = self.mask_conv(mask)
         mask_image = image.clone() * mask 
         out = self.img_conv(mask_image)
 
         # Devide
-        out = (out - bias) / (sum_mask + 1e-20)
-        out = out * (1 - (out.clone() > 1e+10).float()) + bias
+        zero_masked_img = (1 - (sum_mask == 0).float()) * (out - bias)
+        out = zero_masked_img / (sum_mask + 1e-20) + bias
 
         # Rest
         # out = (out - bias) / sum_mask + bias
@@ -138,8 +138,8 @@ class PartialConv2d(nn.Module):
         return out, mask
 
 if __name__ == '__main__':
-    image = Variable(torch.from_numpy(np.random.random([32, 3, 320, 480])).float()).cuda()
-    mask  = Variable(torch.from_numpy(np.random.randint(0, 2, [32, 3, 320, 480]))).cuda()
-    net = PartialConv2d(3, 32)
+    image = Variable(torch.from_numpy(np.random.random([1, 1, 3, 3])).float()).cuda()
+    mask  = Variable(torch.from_numpy(np.asarray([[[[1, 1, 1], [1, 0, 1], [1, 1, 1]]]]))).cuda()
+    net = PartialConv2d(1, 32)
     net.cuda()
     out, revised_mask = net(image, mask)
