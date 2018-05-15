@@ -49,7 +49,7 @@ if __name__ == '__main__':
     # Work and show the result
     model.setInput(target = img, mask = mask)
     model.forward()
-    recon_img, _ = model.getOutput()
+    _, recon_img, _ = model.getOutput()
     show_img = sunnertransforms.tensor2Numpy(recon_img, 
         transform = transforms.Compose([
             sunnertransforms.UnNormalize(),

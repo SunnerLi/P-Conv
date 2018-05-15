@@ -22,6 +22,7 @@ class ImageDataset(Data.Dataset):
     def __init__(self, root_list, use_cv = True, sample_method = UNDER_SAMPLING, transform = None, split_ratio = 0.0):
         """
             The dataset object which can receive multiple image set.
+
             Arg:    root_list       - List. The list of image set, the string is also adopt if you want to directly assign the .pkl structure file
                     use_cv          - Bool. If use OpenCV as back-end or not 
                                       (default is True)
@@ -227,6 +228,7 @@ class ImageLoader(Data.DataLoader):
     def __init__(self, dataset, batch_size=1, shuffle=False, num_workers = 1):
         """
             The DataLoader object which can deal with ImageDataset object.
+
             Arg:    dataset     - ImageDataset. You should use sunnerData.ImageDataset to generate the instance first
                     batch_size  - Int.
                     shuffle     - Bool. Shuffle the data or not

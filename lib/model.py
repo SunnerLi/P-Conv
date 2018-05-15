@@ -1,32 +1,85 @@
-from module import PartialDown, PartialUp
+from module import PartialDown, PartialUp, unetConv2, unetUp
 from torch.autograd import Variable
 from CustomVGG import CustomVGG
 from loss import GramL1Loss
+from base import Model
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
 import torch
 
-def to_var(obj):
-    if obj is not None:
-        return Variable(obj) if type(obj) != Variable else obj
-    return None
-
-class PartialUNet(nn.Module):
+class UNet(Model):
     def __init__(self, style_list = "p1,p2,p3", base = 64):
-        super(PartialUNet, self).__init__()
-        self.style_list = style_list.split(',')
+        super(UNet, self).__init__(style_list = style_list, base = base)
 
-        # Set loss balance constants
-        self.lambda_hole = 6
-        self.lambda_perceptual = 0.05
-        self.lambda_style = 1
-        self.lambda_tv = 0.1
+        # Define encoder layers
+        self.down1 = unetConv2(3, base, False)
+        self.pool1 = nn.MaxPool2d(kernel_size = 2)
 
-        # Load pre-trained VGG16 and fix parameter training
-        self.vgg = CustomVGG(model_path = 'vgg_conv.pth', download = True)
-        for v in self.vgg.parameters():
-            v.requires_grad = False
+        self.down2 = unetConv2(base * 1, base * 2)
+        self.pool2 = nn.MaxPool2d(kernel_size = 2)
+
+        self.down3 = unetConv2(base * 2, base * 4)
+        self.pool3 = nn.MaxPool2d(kernel_size = 2)
+
+        self.down4 = unetConv2(base * 4, base * 8)
+        self.pool4 = nn.MaxPool2d(kernel_size = 2)
+
+        self.down5 = unetConv2(base * 8, base * 8)
+        self.pool5 = nn.MaxPool2d(kernel_size = 2)
+
+        self.down6 = unetConv2(base * 8, base * 8)
+        self.pool6 = nn.MaxPool2d(kernel_size = 2)
+
+        self.down7 = unetConv2(base * 8, base * 8)
+        self.pool7 = nn.MaxPool2d(kernel_size = 2)
+
+        self.down8 = unetConv2(base * 8, base * 8)
+
+        # Define decoder layers
+        self.up8 = unetUp(512, 512, 512, False)
+        self.up7 = unetUp(512, 512, 512, False)
+        self.up6 = unetUp(512, 512, 512, False)
+        self.up5 = unetUp(512, 512, 512, False)
+        self.up4 = unetUp(512, 256, 256, False)
+        self.up3 = unetUp(256, 128, 128, False)
+        self.up2 = unetUp(128, 64, 64, False)
+        self.up1 = unetConv2(64, 3, False)
+
+        # Define dummy variable
+        self.recon_mask = None        
+
+    def forward(self):
+        conv1 = self.down1(self.img)
+        pool1 = self.pool1(conv1)
+
+        conv2 = self.down2(pool1)
+        pool2 = self.pool2(conv2)
+        conv3 = self.down3(pool2)
+        pool3 = self.pool3(conv3)
+        conv4 = self.down4(pool3)
+        pool4 = self.pool4(conv4)
+        conv5 = self.down5(pool4)
+        pool5 = self.pool5(conv5)
+        conv6 = self.down6(pool5)
+        pool6 = self.pool6(conv6)
+        conv7 = self.down7(pool6)
+        pool7 = self.pool7(conv7)
+        center = self.down8(pool7)
+
+        up8 = self.up8(conv7, center)
+        up7 = self.up7(conv6, up8)
+        up6 = self.up6(conv5, up7)
+        up5 = self.up5(conv4, up6)
+        up4 = self.up4(conv3, up5) 
+        up3 = self.up3(conv2, up4)
+        up2 = self.up2(conv1, up3)
+        self.recon_img = self.up1(up2)
+        self.recon_img = F.tanh(self.recon_img)
+
+class PartialUNet(Model):
+    def __init__(self, style_list = "p1,p2,p3", base = 64):
+        super(PartialUNet, self).__init__(style_list = style_list, base = base)
 
         # Define encoder layers
         self.down1 = PartialDown(3, base, 7, 2, 3, use_batch_norm = False)
@@ -48,34 +101,6 @@ class PartialUNet(nn.Module):
         self.up2 = PartialUp(128, 64, 64, 3, 1, 1)
         self.up1 = PartialUp(64, 3, 3, 3, 1, 1, use_batch_norm = False, use_lr = False)
 
-        # Define criterion
-        self.criterion_l1    = nn.L1Loss()
-        self.criterion_style = GramL1Loss()
-
-    def setInput(self, image = None, mask = None, target = None):
-        # Judge if the answer is gotten
-        self.target = to_var(target)
-        self.mask = to_var(mask)
-        if image is None:
-            self.img = self.target.clone() * self.mask.clone().float()
-        else:
-            self.img = to_var(image)
-        self.mask = self.mask.long()
-
-        # Move to gpu if gpu is availiable
-        if torch.cuda.is_available():
-            self.img = self.img.cuda()
-            self.mask = self.mask.cuda()
-            if self.target is not None:
-                self.target = self.target.cuda()
-
-    def getTrainableParameters(self):
-        trainable_list = [v for v in self.parameters() if v.requires_grad is True]
-        return (v for v in trainable_list)
-
-    def getOutput(self):
-        return self.recon_img, self.recon_mask
-
     def forward(self):
         x1, m1 = self.down1(self.img, self.mask)
         x2, m2 = self.down2(x1, m1)
@@ -96,57 +121,10 @@ class PartialUNet(nn.Module):
         self.recon_img, self.recon_mask = self.up1(x_, self.img, m_, self.mask)
         self.recon_img = F.tanh(self.recon_img)
 
-    def backward(self):
-        # Formulate the symbol
-        I_out  = self.recon_img
-        I_gt   = self.target
-        M      = self.mask.clone().float()
-        I_comp = M * I_out + (1 - M) * I_gt
-
-        # Pass through VGG
-        psi_out  = self.vgg(I_out, self.style_list)
-        psi_gt   = self.vgg(I_gt, self.style_list)
-        psi_comp = self.vgg(I_comp, self.style_list)
-
-        # ------------------------------------------------------------------------------------------------
-        # Form loss term
-        # ------------------------------------------------------------------------------------------------
-        loss_valid = self.criterion_l1(M * I_out, M * I_gt)
-        loss_hole = self.criterion_l1((1 - M) * I_out, (1 - M) * I_gt)
-        loss_perceptual = None
-        loss_style_out = None
-        loss_style_comp = None
-        for layer in self.style_list:
-            # Perceptual loss
-            if loss_perceptual is None:
-                loss_perceptual = self.criterion_l1(psi_out[layer], psi_gt[layer])
-            else:
-                loss_perceptual += self.criterion_l1(psi_out[layer], psi_gt[layer])
-
-            # Style loss (raw output)
-            if loss_style_out is None:
-                loss_style_out = self.criterion_style(psi_out[layer], psi_gt[layer])
-            else:
-                loss_style_out += self.criterion_style(psi_out[layer], psi_gt[layer])
-
-            # Style loss (composited output)
-            if loss_style_comp is None:
-                loss_style_comp = self.criterion_style(psi_comp[layer], psi_gt[layer])
-            else:
-                loss_style_comp += self.criterion_style(psi_comp[layer], psi_gt[layer])
-
-        # TV loss
-        b, c, h, w = I_comp.size()
-        vertical_target = Variable(I_comp[:, :, 1:, :].data, requires_grad = False)
-        horizontal_target = Variable(I_comp[:, :, :, 1:].data, requires_grad = False)
-        loss_tv = self.criterion_l1(I_comp[:, :, :h-1, :], vertical_target) + \
-            self.criterion_l1(I_comp[:, :, :, :w-1], horizontal_target)
-
-        # Merge as total loss
-        loss_total = loss_valid \
-            + self.lambda_hole * loss_hole \
-            + self.lambda_perceptual * loss_perceptual \
-            + self.lambda_tv * loss_tv \
-            + self.lambda_style * (loss_style_out + loss_style_comp) 
-        loss_total.backward()
-        return loss_total
+if __name__ == '__main__':
+    net = UNet()
+    img = Variable(torch.from_numpy(np.random.random([1, 3, 512, 512]))).float()
+    mask = Variable(torch.from_numpy(np.random.randint(0, 1, [1, 3, 512, 512])))
+    net.setInput(target = img, mask = mask)
+    net = net.cuda()
+    net()

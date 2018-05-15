@@ -87,17 +87,19 @@ class Normalize(object):
     """
         Normalize toward two tensor
     """
-    def __init__(self, mean = None, std = None):
+    def __init__(self, mean = None, std = None, auto_float = True):
         """
             Normalize the tensor with given mean and standard deviation
             * Notice: If you didn't give mean and std, the result will locate in [-1, 1]
             Args:
-                mean    - The mean of the result tensor
-                std     - The standard deviation
+                mean        - The mean of the result tensor
+                std         - The standard deviation
+                auto_float  - The flag to control if transfer into float type automatically (default is True)
         """
         global verbose
         self.mean = mean
         self.std = std
+        self.auto_float = auto_float
         if (mean is None and std is not None) or (mean is not None and std is None):
             raise Exception('You should assign mean and std at the same time! (Or not assign at the same time)')
         if verbose:
@@ -112,10 +114,11 @@ class Normalize(object):
         Returns:
             Tensor: Normalized Tensor image.
         """
-        sample = sample.float() if type(sample) == torch.ByteTensor else sample
+        if self.auto_float:
+            sample = sample.float() if isinstance(sample, torch.ByteTensor) else sample
         if self.mean is not None and self.std is not None:
             if len(sample.size()) == 3:
-                sample = F.normalize(sample, self.mean, self.std)
+                sample = self.normalize_custom(sample, self.mean, self.std)
             else:
                 for t in sample:
                     t = F.normalize(t, self.mean, self.std)
@@ -132,6 +135,13 @@ class Normalize(object):
         t = t.mul_(2)
         t = t.add_(-1)
         return t
+
+    def normalize_custom(self, tensor, mean, var):
+        result = []
+        for t, m, v in zip(tensor, mean, var):
+            result.append(torch.div(torch.add(t, -1 * m), v))
+        result = torch.stack(result, dim = 0)
+        return result
 
 class UnNormalize(object):
     has_show_warn = False
@@ -207,4 +217,4 @@ def tensor2Numpy(tensor, transform = None):
     tensor = tensor.cpu()
     if transform:
         tensor = transform(tensor)
-        return tensor.numpy()
+        return tensor.detach().numpy()
