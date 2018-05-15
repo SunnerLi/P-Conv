@@ -7,6 +7,7 @@ import torchvision_sunner.transforms as sunnertransforms
 import torchvision_sunner.data as sunnerData
 import torchvision.transforms as transforms
 import torch.nn as nn
+import pandas as pd
 import numpy as np
 import argparse
 import torch
@@ -22,6 +23,8 @@ def parse():
     parser.add_argument('--image_folder', default = './data/train2014', type = str, help = 'The folder of the training image')
     parser.add_argument('--model_path', default = './model.pth', type = str, help = 'The path of training model result')
     parser.add_argument('--model_type', default = 'pconv', type = str, help = 'The type of model (pconv or unet)')   
+    parser.add_argument('--record_time', default = 100, type = int, help = 'The period to record the training result')   
+    parser.add_argument('--record_path', default = 'pconv.csv', type = str, help = 'The CSV name of record file')   
     parser.add_argument('--style', default = "p1,p2,p3", type = str, help = 'The symbol of style loss')
 
     # Hyper-parameters
@@ -35,6 +38,8 @@ if __name__ == '__main__':
     args = parse()
 
     # Create data loader
+    sunnerData.quiet()
+    sunnertransforms.quiet()
     loader = sunnerData.ImageLoader(
         sunnerData.ImageDataset(root_list = [args.image_folder, './data/mask'], transform = transforms.Compose([
             # sunnertransforms.Rescale((360, 640)),
@@ -63,6 +68,7 @@ if __name__ == '__main__':
     optimizer = Adam(model.getTrainableParameters(), lr = args.lr)
 
     # Train
+    loss_list = []
     for epoch in range(args.epoch):
         for idx, (image, mask) in enumerate(loader):
             
@@ -74,16 +80,21 @@ if __name__ == '__main__':
             # backward
             optimizer.zero_grad()
             loss = model.backward()
-            print('Epoch: ', epoch, '\tIteration: ', idx, '\tLoss: ', loss.data[0])
             optimizer.step()
 
-    # Show
-    input_img, recon_img, recon_mask = model.getOutput()
-    show_img = sunnertransforms.tensor2Numpy(recon_img, 
-        transform = transforms.Compose([
-            sunnertransforms.UnNormalize(),
-            sunnertransforms.Transpose(sunnertransforms.BCHW2BHWC),
-    ]))
-    show_img = show_img.astype(np.uint8)
-    cv2.imwrite("show.png", show_img[0])
-    torch.save(model.state_dict(), args.model_path)
+            # Show
+            if idx % args.record_time == 0:
+                print('Epoch: ', epoch, '\tIteration: ', idx, '\tLoss: ', loss.data[0])
+                input_img, recon_img, recon_mask = model.getOutput()
+                show_img = sunnertransforms.tensor2Numpy(recon_img, 
+                    transform = transforms.Compose([
+                        sunnertransforms.UnNormalize(),
+                        sunnertransforms.Transpose(sunnertransforms.BCHW2BHWC),
+                ]))
+                show_img = show_img.astype(np.uint8)
+                cv2.imwrite("show.png", show_img[0])
+                torch.save(model.state_dict(), args.model_path)
+
+                loss_list.append(loss.data[0])
+                df = pd.DataFrame({'loss': loss_list})
+                df.to_csv(args.record_path)
