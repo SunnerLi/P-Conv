@@ -13,9 +13,14 @@ import torch
 
 class PartialDown(nn.Module):
     def __init__(self, input_channel = 3, output_channel = 32, kernel_size = 3, 
-        stride = 2, padding = 1, bias = True, use_batch_norm = True):
+        stride = 2, padding = 1, bias = True, use_batch_norm = True, freeze = False):
         super(PartialDown, self).__init__()
         self.use_batch_norm = use_batch_norm
+        if self.use_batch_norm:
+            self.norm = nn.BatchNorm2d(output_channel)
+            if freeze:
+                for p in self.parameters():
+                    p.requires_grad = False
         self.pconv = PartialConv2d(
             input_channel = input_channel,
             output_channel = output_channel,
@@ -23,8 +28,7 @@ class PartialDown(nn.Module):
             stride = stride,
             padding = padding
         )
-        if self.use_batch_norm:
-            self.norm = nn.BatchNorm2d(output_channel)
+        
 
     def forward(self, x, m):
         x_, m_ = self.pconv(x, m)
@@ -74,12 +78,16 @@ class PartialUp(nn.Module):
 
 class unetDown(nn.Module):
     def __init__(self, input_channel = 3, output_channel = 32, kernel_size = 3, 
-        stride = 2, padding = 1, use_batch_norm = True):
-        super(unetDown, self).__init__()
+        stride = 1, padding = 1, use_batch_norm = True, freeze = False):
+        super(unetDown, self).__init__()           
         if use_batch_norm:
+            batch = nn.BatchNorm2d(output_channel)
+            if freeze:
+                for p in batch.parameters():
+                    p.requires_grad = False
             self.layer = nn.Sequential(
                 nn.Conv2d(input_channel, output_channel, kernel_size, stride, padding),
-                nn.BatchNorm2d(output_channel),
+                batch,
                 nn.ReLU()
             )
         else:
@@ -93,7 +101,7 @@ class unetDown(nn.Module):
 
 class unetUp(nn.Module):
     def __init__(self, input_channel = 32, concat_channel = 32, output_channel = 32, 
-        kernel_size = 3, stride = 2, padding = 1, use_batch_norm = True, use_lr = True):
+        kernel_size = 3, stride = 1, padding = 1, use_batch_norm = True, use_lr = True):
         super(unetUp, self).__init__()
         if use_batch_norm:
             self.layer = nn.Sequential(

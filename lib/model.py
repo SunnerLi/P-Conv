@@ -9,18 +9,18 @@ import numpy as np
 import torch
 
 class UNet(Model):
-    def __init__(self, style_list = "p1,p2,p3", base = 64, style_weight = 1):
+    def __init__(self, style_list = "p1,p2,p3", base = 64, style_weight = 1, freeze = False):
         super(UNet, self).__init__(style_list = style_list, base = base, style_weight = style_weight)
 
         # Define encoder layers (conv)
         self.down1 = unetDown(3, base, use_batch_norm = False)
-        self.down2 = unetDown(base * 1, base * 2)
-        self.down3 = unetDown(base * 2, base * 4)
-        self.down4 = unetDown(base * 4, base * 8)
-        self.down5 = unetDown(base * 8, base * 8)
-        self.down6 = unetDown(base * 8, base * 8)
-        self.down7 = unetDown(base * 8, base * 8)
-        self.down8 = unetDown(base * 8, base * 8)
+        self.down2 = unetDown(base * 1, base * 2, freeze = freeze)
+        self.down3 = unetDown(base * 2, base * 4, freeze = freeze)
+        self.down4 = unetDown(base * 4, base * 8, freeze = freeze)
+        self.down5 = unetDown(base * 8, base * 8, freeze = freeze)
+        self.down6 = unetDown(base * 8, base * 8, freeze = freeze)
+        self.down7 = unetDown(base * 8, base * 8, freeze = freeze)
+        self.down8 = unetDown(base * 8, base * 8, freeze = freeze)
 
         # Define encoder layers (max pool)
         self.pool1 = nn.MaxPool2d(kernel_size = 2)
@@ -47,7 +47,6 @@ class UNet(Model):
     def forward(self):
         conv1 = self.down1(self.img)
         pool1 = self.pool1(conv1)
-
         conv2 = self.down2(pool1)
         pool2 = self.pool2(conv2)
         conv3 = self.down3(pool2)
@@ -73,18 +72,18 @@ class UNet(Model):
         self.recon_img = F.tanh(self.recon_img)
 
 class PartialUNet(Model):
-    def __init__(self, style_list = "p1,p2,p3", base = 64, style_weight = 1):
+    def __init__(self, style_list = "p1,p2,p3", base = 64, style_weight = 1, freeze = False):
         super(PartialUNet, self).__init__(style_list = style_list, base = base, style_weight = style_weight)
 
         # Define encoder layers
         self.down1 = PartialDown(3, base, 7, 2, 3, use_batch_norm = False)
-        self.down2 = PartialDown(base, base * 2, 5, 2, 2)
-        self.down3 = PartialDown(base * 2, base * 4, 5, 2, 2)
-        self.down4 = PartialDown(base * 4, base * 8, 3, 2, 1)
-        self.down5 = PartialDown(base * 8, base * 8, 3, 2, 1)
-        self.down6 = PartialDown(base * 8, base * 8, 3, 2, 1)
-        self.down7 = PartialDown(base * 8, base * 8, 3, 2, 1)
-        self.down8 = PartialDown(base * 8, base * 8, 3, 2, 1)
+        self.down2 = PartialDown(base, base * 2, 5, 2, 2, freeze = freeze)
+        self.down3 = PartialDown(base * 2, base * 4, 5, 2, 2, freeze = freeze)
+        self.down4 = PartialDown(base * 4, base * 8, 3, 2, 1, freeze = freeze)
+        self.down5 = PartialDown(base * 8, base * 8, 3, 2, 1, freeze = freeze)
+        self.down6 = PartialDown(base * 8, base * 8, 3, 2, 1, freeze = freeze)
+        self.down7 = PartialDown(base * 8, base * 8, 3, 2, 1, freeze = freeze)
+        self.down8 = PartialDown(base * 8, base * 8, 3, 2, 1, freeze = freeze)
 
         # Define decoder layers
         self.up8 = PartialUp(base * 8, base * 8, base * 8, 3, 1, 1)
