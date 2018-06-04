@@ -64,7 +64,7 @@ class PartialUp(nn.Module):
 
     def forward(self, x, cat_x, m, cat_m):
         x = self.up(x)
-        m = self.up(m.float()).long()
+        m = self.up(m.float())
         x, cat_x = self.checkAndPadding(x, cat_x)
         m, cat_m = self.checkAndPadding(m, cat_m)
         x = torch.cat([x, cat_x], 1)

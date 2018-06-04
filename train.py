@@ -2,7 +2,7 @@ import _init_path
 from torch.autograd import Variable
 from model import PartialUNet, UNet
 from torch.optim import Adam
-from summary import summary
+# from summary import summary
 import torchvision_sunner.transforms as sunnertransforms
 import torchvision_sunner.data as sunnerData
 import torchvision.transforms as transforms
@@ -20,7 +20,7 @@ def parse():
     # Fundemental
     parser.add_argument('--epoch', default = 1, type = int, help = 'epoch')
     parser.add_argument('--batch_size', default = 1, type = int, help = 'batch size')
-    parser.add_argument('--image_folder', default = './data/train2014', type = str, help = 'The folder of the training image')
+    parser.add_argument('--image_folder', default = './data/train2015', type = str, help = 'The folder of the training image')
     parser.add_argument('--model_path', default = './model.pth', type = str, help = 'The path of training model result')
     parser.add_argument('--model_type', default = 'pconv', type = str, help = 'The type of model (pconv or unet)')   
     parser.add_argument('--record_time', default = 100, type = int, help = 'The period to record the training result')   
@@ -42,15 +42,15 @@ if __name__ == '__main__':
     sunnerData.quiet()
     sunnertransforms.quiet()
     loader = sunnerData.ImageLoader(
-        sunnerData.ImageDataset(root_list = [args.image_folder, './data/mask'], transform = transforms.Compose([
+        sunnerData.ImageDataset(root_list = [args.image_folder, './tool/gen_mask'], transform = transforms.Compose([
             # sunnertransforms.Rescale((360, 640)),
-            sunnertransforms.Rescale((512, 512)),
+            sunnertransforms.Rescale((256, 256)),
             sunnertransforms.ToTensor(),
 
             # BHWC -> BCHW
             sunnertransforms.Transpose(sunnertransforms.BHWC2BCHW),
             sunnertransforms.Normalize()
-        ])), 
+        ]), sample_method = sunnerData.OVER_SAMPLING), 
         batch_size=args.batch_size, 
         shuffle=False, 
         num_workers = 2

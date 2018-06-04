@@ -30,10 +30,11 @@ class Model(nn.Module):
         self.target = to_var(target)
         self.mask = to_var(mask)
         if image is None:
-            self.img = self.target.clone() * self.mask.clone().float()
+            # self.img = self.target.clone() * self.mask.clone().float()
+            self.img = Variable(self.target.data) * self.mask.clone().float()
         else:
             self.img = to_var(image)
-        self.mask = self.mask.long()
+        self.mask = Variable(self.mask.data, requires_grad = False).float()
 
         # Move to gpu if gpu is availiable
         if torch.cuda.is_available():

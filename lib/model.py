@@ -113,7 +113,8 @@ class PartialUNet(Model):
         x_, m_ = self.up3(x_, x2, m_, m2)
         x_, m_ = self.up2(x_, x1, m_, m1)
         self.recon_img, self.recon_mask = self.up1(x_, self.img, m_, self.mask)
-        self.recon_img = F.tanh(self.recon_img)
+        # self.recon_img = F.tanh(self.recon_img)
+        self.recon_img = F.sigmoid(self.recon_img) * 2 - 1
 
 if __name__ == '__main__':
     net = UNet()

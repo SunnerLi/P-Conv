@@ -34,7 +34,6 @@ class PartialConv2d(nn.Module):
         super(PartialConv2d, self).__init__()
         self.input_channel = input_channel
         self.output_channel = output_channel
-        self.hadFixedKernel = False
         self.mask_conv = self.__Conv2d(
             input_channel = input_channel, 
             output_channel = output_channel, 
@@ -53,6 +52,7 @@ class PartialConv2d(nn.Module):
             fill = False,
             bias = True
         )
+        self.__fixedKernel()
 
     def __Conv2d(self, input_channel, output_channel, kernel_size, stride, padding, fill = False, bias = True):
         """
@@ -77,6 +77,13 @@ class PartialConv2d(nn.Module):
         if padding != 0:
             op += [nn.ZeroPad2d(padding)]
         conv_op = nn.Conv2d(input_channel, output_channel, kernel_size, stride = stride, padding = 0, bias = bias)
+
+        # Initialize the parameters
+        conv_op.weight.data.normal_(0, 0.01)
+        if bias:
+            conv_op.bias.data.fill_(0.001)
+
+        # Fix the kernel
         if fill:
             conv_op.weight.data.fill_(1)
         op += [conv_op]
@@ -114,18 +121,12 @@ class PartialConv2d(nn.Module):
             raise DifferentShapeException(self.__class__.__name__,
                 "The channel of mask should be %d !" % self.input_channel)
 
-        # Check if decline the mask kernel computation
-        if not self.hadFixedKernel:
-            self.__fixedKernel()
-            self.hadFixedKernel = True
-
         # Construct the bias tensor first
         bias = self.img_conv(Variable(torch.zeros_like(image.data)))
 
         # Forward next
-        mask = mask.float()               
         sum_mask = self.mask_conv(mask)
-        mask_image = image.clone() * mask 
+        mask_image = image * mask 
         out = self.img_conv(mask_image)
 
         # Devide
@@ -133,8 +134,7 @@ class PartialConv2d(nn.Module):
         out = zero_masked_img / (sum_mask + 1e-20) + bias
 
         # Rest
-        # out = (out - bias) / sum_mask + bias
-        mask = torch.clamp(sum_mask, 0, 1).long()
+        mask = torch.clamp(sum_mask, 0, 1)
         return out, mask
 
 if __name__ == '__main__':
