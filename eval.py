@@ -1,6 +1,6 @@
 import _init_path
 from skimage.measure import compare_psnr
-from model import PartialUNet
+from model import PartialUNet, UNet
 import torchvision_sunner.transforms as sunnertransforms
 import torchvision_sunner.data as sunnerData
 import torchvision.transforms as transforms
@@ -22,12 +22,12 @@ def evalModel(args, model):
     # Create data loader
     loader = sunnerData.ImageLoader(
         sunnerData.ImageDataset(root_list = [args.folder_path, args.mask_path], transform = transforms.Compose([
-            sunnertransforms.Rescale((512, 512)),
+            sunnertransforms.Rescale((256, 256)),
             sunnertransforms.ToTensor(),
             sunnertransforms.Transpose(sunnertransforms.BHWC2BCHW),
             sunnertransforms.Normalize()
-        ])), 
-        batch_size=1, 
+        ]), sample_method = sunnerData.OVER_SAMPLING), 
+        batch_size=2, 
         shuffle=False, 
         num_workers = 2
     )
@@ -40,9 +40,13 @@ def evalModel(args, model):
         model.setInput(target = image, mask = mask)
         model.forward()
         _, recon_img, _ = model.getOutput()
+        # psnr = compare_psnr(
+        #     image[0].detach().cpu().numpy(), 
+        #     recon_img[0].detach().cpu().numpy()
+        # )
         psnr = compare_psnr(
-            image[0].detach().cpu().numpy(), 
-            recon_img[0].detach().cpu().numpy()
+            image[0].cpu().numpy(), 
+            recon_img[0].cpu().data.numpy()
         )
         psnr_list.append(psnr)
 
@@ -59,6 +63,10 @@ if __name__ == '__main__':
         if not os.path.exists(args.model_path):
             raise Exception('You should train the model first...')
         model = PartialUNet()
+    if args.model_type == 'unet':
+        if not os.path.exists(args.model_path):
+            raise Exception('You should train the model first...')
+        model = UNet()
     model = model.cuda() if torch.cuda.is_available() else model
     model.load_state_dict(torch.load(args.model_path))
 
