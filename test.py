@@ -1,6 +1,6 @@
 import _init_path
-from model import PartialUNet
-from utils import to_var
+from lib.model import PartialUNet, UNet
+from lib.utils import to_var
 import torchvision_sunner.transforms as sunnertransforms
 import torchvision_sunner.data as sunnerData
 import torchvision.transforms as transforms
@@ -49,7 +49,8 @@ if __name__ == '__main__':
     # Load the model
     if not os.path.exists(args.model_path):
         raise Exception('You should train the model first...')
-    model = PartialUNet()
+    # model = PartialUNet()
+    model = UNet()
     model = model.cuda() if torch.cuda.is_available() else model
     model.load_state_dict(torch.load(args.model_path))
 
