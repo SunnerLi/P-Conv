@@ -1,4 +1,4 @@
-## P-Conv
+# P-Conv
 ### The implementation of the partial convolution
 
 [![Packagist](https://img.shields.io/badge/Pytorch-0.4.0+-red.svg)]()
@@ -86,6 +86,10 @@ After you download the model, you can check the inpainting result by this comman
 ```
 python3 test.py --image_path data/test/kker_blur.jpg --model_path pconv3_fine_tune_coco.pth
 ```
+
+Hardware & Time
+---
+The hardware we use is the server with GTX 1080Ti. For each model, we use single GPU to do the training. The total number of GPU we use is 3. The total training time is about 3 weeks. (2 weeks pre-train and 1 week fine-tune)  
 
 Result
 ---
