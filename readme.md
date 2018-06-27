@@ -93,10 +93,10 @@ The hardware we use is the server with GTX 1080Ti. For each model, we use single
 
 Result
 ---
-![](https://raw.githubusercontent.com/SunnerLi/partial/master/appendix/merge.png?token=AK99R3xvYG86Nr19bZvw6tUD2rHB0AjZks5bPJJmwA%3D%3D)
+![](https://github.com/SunnerLi/P-Conv/blob/master/appendix/merge.png)
 The training loss curve is shown above. We record the loss for each 100 iteration, and list the front 20 epoch. As you can see, the convergence for the last 10 epoch is still instable. However, the trend of size 256 is very similar to the size 224. It shows that the partial convolution U-Net can indeed adapt for arbitrary size (not the exponential of 2).         
 
-![](https://raw.githubusercontent.com/SunnerLi/partial/master/appendix/kker_merge.png?token=AK99RwZTKaWznAwZhqnVMjkL6aalOE1mks5bPM3WwA%3D%3D)
+![](https://github.com/SunnerLi/P-Conv/blob/master/appendix/kker_merge.png)
 
 The figure illustrates the render result. This image is captured by my friend, and it's not from official dataset.  However, the perfect result which paper showed cannot be seen in this re-implementation. The face region in the image is just like rendering with colorful style. On the other hand, the U-Net tends to render with identity mapping.    
 
