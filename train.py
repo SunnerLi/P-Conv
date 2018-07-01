@@ -2,6 +2,7 @@ import _init_path
 from torch.autograd import Variable
 from model import PartialUNet, UNet
 from torch.optim import Adam
+from tqdm import tqdm
 # from summary import summary
 import torchvision_sunner.transforms as sunnertransforms
 import torchvision_sunner.data as sunnerData
@@ -21,6 +22,7 @@ def parse():
     parser.add_argument('--epoch', default = 1, type = int, help = 'epoch')
     parser.add_argument('--batch_size', default = 1, type = int, help = 'batch size')
     parser.add_argument('--image_folder', default = './data/train2015', type = str, help = 'The folder of the training image')
+    parser.add_argument('--mask_folder', default = '../ext/scibble_mask_dataset', type = str, help = 'The folder of the scribble mask')
     parser.add_argument('--model_path', default = './model.pth', type = str, help = 'The path of training model result')
     parser.add_argument('--model_type', default = 'pconv', type = str, help = 'The type of model (pconv or unet)')   
     parser.add_argument('--record_time', default = 100, type = int, help = 'The period to record the training result')   
@@ -42,7 +44,7 @@ if __name__ == '__main__':
     sunnerData.quiet()
     sunnertransforms.quiet()
     loader = sunnerData.ImageLoader(
-        sunnerData.ImageDataset(root_list = [args.image_folder, './tool/gen_mask'], transform = transforms.Compose([
+        sunnerData.ImageDataset(root_list = [args.image_folder, args.mask_folder], transform = transforms.Compose([
             # sunnertransforms.Rescale((360, 640)),
             sunnertransforms.Rescale((256, 256)),
             sunnertransforms.ToTensor(),
@@ -80,8 +82,10 @@ if __name__ == '__main__':
 
     # Train
     loss_list = []
-    for epoch in range(args.epoch):
-        for idx, (image, mask) in enumerate(loader):
+    bar_epoch = tqdm(range(args.epoch))
+    for epoch in bar_epoch:
+        bar_iter = tqdm(loader)
+        for idx, (image, mask) in enumerate(bar_iter):
             
             # forward
             mask = (mask + 1) / 2
@@ -91,11 +95,11 @@ if __name__ == '__main__':
             # backward
             optimizer.zero_grad()
             loss = model.backward()
+            bar_iter.set_description('Loss: ' + str(loss.data.item()))
             optimizer.step()
 
             # Show
             if idx % args.record_time == 0:
-                print('Epoch: ', epoch, '\tIteration: ', idx, '\tLoss: ', loss.data[0])
                 if idx != 0:
                     input_img, recon_img, recon_mask = model.getOutput()
                     show_img = sunnertransforms.tensor2Numpy(recon_img, 
