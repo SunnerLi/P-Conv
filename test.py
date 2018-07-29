@@ -49,8 +49,8 @@ if __name__ == '__main__':
     # Load the model
     if not os.path.exists(args.model_path):
         raise Exception('You should train the model first...')
-    # model = PartialUNet()
-    model = UNet()
+    model = PartialUNet()
+    #model = UNet()
     model = model.cuda() if torch.cuda.is_available() else model
     model.load_state_dict(torch.load(args.model_path))
 
@@ -75,6 +75,7 @@ if __name__ == '__main__':
         mask = op(mask)
     img = torch.stack([img, img], 0)
     mask = torch.stack([mask, mask], 0)
+    mask = (mask + 1) / 2
 
     # Work!
     if args.mask_path is not None:
