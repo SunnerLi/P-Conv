@@ -5,8 +5,7 @@
 [![Packagist](https://img.shields.io/badge/Torchvision-0.2.0-red.svg)]()
 [![Packagist](https://img.shields.io/badge/Python-3.5.2-blue.svg)]()
 
-![](https://cdn-images-1.medium.com/max/2000/1*HUmj7An3CvGrJiTZAgiHBw.png)
-
+![](https://github.com/SunnerLi/P-Conv/blob/master/data/readme_img/mix.png)
 
 Abstraction
 ---
@@ -28,7 +27,7 @@ If you want to train from scratch, you can choose to train directly, or train wi
 Train partial-convolution U-Net: 
 ```
 # Pre-train (1st stage)
-$ python3 train.py --epoch 10 --batch_size 4 --image_folder <Place365_dataset_folder> --model_path pconv.pth --model_type pconv --record_time 100 --record_path pconv_1to10.csv --freeze False --lr 0.02 --lambda_style 1 
+$ python3 train.py --epoch 10 --batch_size 4 --image_folder <Place365_dataset_folder> --mask_folder <mask_folder> --model_path pconv.pth --model_type pconv --record_time 100 --record_path pconv_1to10.csv --freeze False --lr 0.02 --lambda_style 1 
 
 # Pre-train (2nd stage)
 $ python3 train.py --epoch 10 --batch_size 4 --image_folder <Place365_dataset_folder> --model_path pconv.pth --model_type pconv --record_time 100 --record_path pconv_11to20.csv --freeze False --lr 0.002 --lambda_style 120 
@@ -55,66 +54,38 @@ $ cp unet.pth unet_tune.pth
 $ python3 train.py --epoch 400 --batch_size 4 --image_folder <MSCOCO_dataset_folder> --model_path unet_tune.pth --model_type unet --record_time 100 --record_path unet_tune.csv --freeze True --lr 0.0002 --lambda_style 120 
 ```
 
-### Testing
-We also provide our training result to let you perform the inpainting ability right away! Just download from the following link.    
+### Testing (New)
+After 08/2018, we only provide the pre-trained model with size 256 which is trained again by ourself. You can refer to the original [page](https://github.com/SunnerLi/P-Conv/wiki/Readme.md) to download the rest pre-trained model. However, you can also perform the inpainting ability with this model right away! Just download from the following link.    
 
-1. The partial-convolution U-Net pre-trained result after 20 epoch on Place365 only, and the size of image is 256 x 256
+* The partial-convolution U-Net pre-trained result after 20 epoch on Place365 only, and the size of image is 256 x 256
 ```
-https://drive.google.com/file/d/1_r0Ek2CaPGfiIcchpxdzBbUrELjZwRNN/view?usp=sharing
+https://drive.google.com/file/d/1Ss27dJ5TsQ39rCrUtEDnHt7eWst2jJyn/view?usp=sharing
 ```
-
-2. The partial-convolution U-Net result after fine tune on MS-COCO 2014, and the size of image is 256 x 256
-```
-https://drive.google.com/file/d/1noLXmAkCiSn7-LLPS8lpy4jVc_Br0paa/view?usp=sharing
-```
-
-3. The traditional U-Net pre-trained result after 20 epoch on Place365 only, and the size of image is 256 x 256
-```
-https://drive.google.com/file/d/1YLGXLndVgM0CkRd_s8-lgaGV_QUwG7rx/view?usp=sharing
-```
-
-4. The partial-convolution U-Net pre-trained result after 20 epoch on Place365 only, and the size of image is 224 x 224
-```
-https://drive.google.com/file/d/1VUxNQQXIRP6n92cT-z2F6rtDIOwxEyoo/view?usp=sharing
-```
-<br/>    
 
 After you download the model, you can check the inpainting result by this command. We provide the inpainting mechanism by using partial-convolution U-Net. If you want to try with traditional U-Net, just do a little revision in `test.py` slightly.     
 
-<br/>     
-    
 ```
-python3 test.py --image_path data/test/kker_blur.jpg --model_path pconv3_fine_tune_coco.pth
+python3 test.py --image_path data/test/kker_blur.jpg --model_path pconv_256_retrain.pth
 ```
 
 Hardware & Time
 ---
-The hardware we use is the server with GTX 1080Ti. For each model, we use single GPU to do the training. The total number of GPU we use is 3. The total training time is about 3 weeks. (2 weeks pre-train and 1 week fine-tune)  
+The hardware we use is the server with GTX 1080Ti. For each model, we use single GPU to do the training. The total number of GPU we use is 3. The total training time is about 3 weeks. Moreover, we train again this summer in order to obtain the better performance while the training time is about 1 month.      
 
 Result
 ---
-![](https://github.com/SunnerLi/P-Conv/blob/master/appendix/merge.png)
-The training loss curve is shown above. We record the loss for each 100 iteration, and list the front 20 epoch. As you can see, the convergence for the last 10 epoch is still instable. However, the trend of size 256 is very similar to the size 224. It shows that the partial convolution U-Net can indeed adapt for arbitrary size (not the exponential of 2).         
 
-![](https://github.com/SunnerLi/P-Conv/blob/master/appendix/kker_merge.png)
+![](https://github.com/SunnerLi/P-Conv/blob/master/data/readme_img/mix2.png)
 
-The figure illustrates the render result. This image is captured by my friend, and it's not from official dataset.  However, the perfect result which paper showed cannot be seen in this re-implementation. The face region in the image is just like rendering with colorful style. On the other hand, the U-Net tends to render with identity mapping.    
+The above image shows the render result which is sampled from original Place365. For simplicity, we only capture the image of air-plane. You can try to sample the other image by your own. In this figure, the lowest row is the image is captured by my friend, and it's not from official dataset. After we train again, the face of the person can be render normally, even though the perfect erasing is still not obtained.      
 
-During training, the convergence of U-Net is much faster than partial U-Net. Some level of convergence in partial U-Net can also be seen in training stage. We guess that the partial convolution can only learn the meaningful feature after **enough tremendous of training**. The performance is limit if the training is not enough.    
-
-|   | Partial U-Net  | U-Net  |   
+   
+|  PSNR | Testing image  | Place365  |   
 |---|---|---|
-| PSNR  | 22.65  | 13.37  |
+|  PConv | **28.73**  | **27.86**  |
+|  U-Net | 13.37  | 18.62  |
 
-The above table shows the PSNR value toward the testing image. Even though the Partial U-Net can get higher score, the result is not satisfied. You can try the following command to evaluate the other dataset by yourself.    
-
-```
-# Evaluate the performance of partial U-Net
-$ python3 eval.py --model_type pconv --model_path pconv3_fine_tune_mscoco.pth --folder_path <image_folder> --mask_path  <mask_folder>
-
-# Evaluate the performance of traditional U-Net
-$ python3 eval.py --model_type unet --model_path unet_256.pth --folder_path <image_folder> --mask_path <mask_folder>
-```
+We also provide the quantitative comparison. The above table shows the PSNR value toward different data distribution. The `Testing image` is the image with my friend, and the random 10 images is selected from Place365, and we name them as `Place365`. The mask is random selected which ratio of hole is between 0.01 to 0.2. The table shows that the model can really perform for the specific level of inpainting.    
 
 Reference
 ---
